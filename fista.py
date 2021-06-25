@@ -6,7 +6,7 @@ from numpy import linalg as LA
 
 def calculate_lip_constant(A):
     # times 2 ??
-    return max(LA.eigvals(np.dot(A.transpose(), A)))
+    return 2 * max(LA.eigvals(np.dot(A.transpose(), A)))
 
 
 def prox(u, alpha_):
@@ -14,7 +14,8 @@ def prox(u, alpha_):
 
 
 def compute_gradient(A, b, y):
-    return A.transpose() * (A * y - b)
+    return np.dot(np.dot(A.transpose(), A), y)\
+           - np.dot(A.transpose(), b)
 
 
 class Fista:
@@ -41,7 +42,7 @@ class Fista:
 
         # Initializing the coefficients (Step 0)
         x_current = np.zeros(n_features, dtype=np.float)
-        x_next = np.zeros(n_features, dtype=np.flaot)
+        x_next = np.zeros(n_features, dtype=np.float)
         y_current = np.copy(x_next)
         y_next = np.zeros(n_features, dtype=np.float)
         tau_old = 1
@@ -67,3 +68,9 @@ class Fista:
             y_current = y_next
 
         return x_next
+
+
+
+
+
+
