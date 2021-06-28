@@ -4,6 +4,7 @@ import numpy as np
 from numpy import linalg as LA
 import scipy.io
 import matplotlib.pyplot as plt
+import random
 
 
 def calculate_lip_constant(A):
@@ -71,25 +72,26 @@ class Fista:
         return x_next
 
 
-def get_voltage_signals():
-    freq = scipy.io.loadmat('./Datasets/FreqVoltages40x40.mat')
+def get_voltage_signals(freq_voltages, index):
+    xcoil = freq_voltages.get('f1')
+    ycoil = freq_voltages.get('f2')
 
-    xcoil = freq.get('f1')
-    ycoil = freq.get('f2')
+    x = xcoil[index, :]
+    y = ycoil[index, :]
 
-    return xcoil, ycoil
+    x = np.concatenate((x.real, x.imag))
+    y = np.concatenate((y.real, y.imag))
 
+    coil_ges = np.concatenate((x, y))
 
-def get_system_matrices():
-    sysmat = scipy.io.loadmat('./Datasets/Vessel_System2.mat')
-
-    Af = sysmat.get('Af')
-    Bf = sysmat.get('Bf')
-
-    return Af, Bf
+    return coil_ges
 
 
-def preprocess(xcoil, ycoil, af, bf):
+def get_system_matrix(sysmat):
+
+    af = sysmat.get('Af')
+    bf = sysmat.get('Bf')
+
     af = af.reshape(817, -1)
     af = np.concatenate((af.real, af.imag), axis=0)
     bf = bf.reshape(817, -1)
@@ -97,51 +99,43 @@ def preprocess(xcoil, ycoil, af, bf):
 
     sys_ges = np.concatenate((af, bf), axis=0)
 
-    x = xcoil[10, :]
-    y = ycoil[10, :]
-
-    x = np.concatenate((x.real, x.imag))
-    y = np.concatenate((y.real, y.imag))
-
-    coil_ges = np.concatenate((x, y))
-
-    return sys_ges, coil_ges
+    return sys_ges
 
 
-def get_image():
+def get_image(index):
     imgs = scipy.io.loadmat('./Datasets/Vessel40x40.mat')
     imgs_all = imgs.get('images_all')
-    img = imgs_all[10]
+    img = imgs_all[index]
 
     return img
 
 
-def plot_results(x, img):
+if __name__ == "__main__":
+    freq = scipy.io.loadmat('./Datasets/FreqVoltages40x40.mat')
+    sysmat = scipy.io.loadmat('./Datasets/Vessel_System2.mat')
 
-    plt.subplot(1, 2, 1)
-    plt.imshow(x)
-    plt.title('Reconstructed Image')
+    sys_matrix = get_system_matrix(sysmat)
+    fista = Fista()
 
-    plt.subplot(1, 2, 2)
-    plt.imshow(img)
-    plt.title('Original Image')
+    f, axarr = plt.subplots(5, 2)
+    for i in range(5):
+        rand = random.randint(0, 82102)
+        coil_ges = get_voltage_signals(freq, rand)
+
+        x = fista.fista(sys_matrix, coil_ges)
+        x = x.reshape(40, 40)
+
+        img = get_image(rand)
+
+        mse = np.sum((img.astype('float') - x.astype('float')) ** 2)
+        mse /= float(img.shape[0] * x.shape[1])
+
+        axarr[i, 0].imshow(img)
+        axarr[i, 0].set_title('Original Image')
+
+        axarr[i, 1].imshow(x)
+        axarr[i, 1].set_title('Reconstructed Image, MSE: {:.2f}'.format(mse))
 
     plt.show()
 
 
-if __name__ == "__main__":
-    xcoil, ycoil = get_voltage_signals()
-    Af, Bf = get_system_matrices()
-
-    A, b = preprocess(xcoil, ycoil, Af, Bf)
-
-    fista = Fista()
-    x = fista.fista(A, b)
-    x = x.reshape(40, 40)
-
-    img = get_image()
-
-    plot_results(x, img)
-
-    # Calculate the difference
-    print(np.max(np.abs(img - x)))
