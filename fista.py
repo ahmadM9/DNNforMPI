@@ -3,8 +3,6 @@ __author__ = "Ahmad Mohammad"
 import numpy as np
 from numpy import linalg as LA
 import scipy.io
-import matplotlib.pyplot as plt
-import random
 
 
 def calculate_lip_constant(A):
@@ -26,7 +24,7 @@ class Fista:
     Fast iterative shrinking/thresholding algorithm
     """
 
-    def __init__(self, lambda_=.5, iterations=1000):
+    def __init__(self, lambda_=.7, iterations=5000):
         self.lambda_ = lambda_
         self.iterations = iterations
 
@@ -108,34 +106,3 @@ def get_image(index):
     img = imgs_all[index]
 
     return img
-
-
-if __name__ == "__main__":
-    freq = scipy.io.loadmat('./Datasets/FreqVoltages40x40.mat')
-    sysmat = scipy.io.loadmat('./Datasets/Vessel_System2.mat')
-
-    sys_matrix = get_system_matrix(sysmat)
-    fista = Fista()
-
-    f, axarr = plt.subplots(5, 2)
-    for i in range(5):
-        rand = random.randint(0, 82102)
-        coil_ges = get_voltage_signals(freq, rand)
-
-        x = fista.fista(sys_matrix, coil_ges)
-        x = x.reshape(40, 40)
-
-        img = get_image(rand)
-
-        mse = np.sum((img.astype('float') - x.astype('float')) ** 2)
-        mse /= float(img.shape[0] * x.shape[1])
-
-        axarr[i, 0].imshow(img)
-        axarr[i, 0].set_title('Original Image')
-
-        axarr[i, 1].imshow(x)
-        axarr[i, 1].set_title('Reconstructed Image, MSE: {:.2f}'.format(mse))
-
-    plt.show()
-
-
