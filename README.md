@@ -1,4 +1,4 @@
-# Deep Neural Networks for Magnetic Particle Imaging
+# Deep Neural Networks for Magnetic Particle Imaging [UNDER WORK]
 
 Introducing my bachelor thesis about denoising of MPI images using neural networks for application in plug-and-play methods.
 
