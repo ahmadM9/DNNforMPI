@@ -91,11 +91,12 @@ def train():
     # Using callback
     loss_history = LossHistory()
     lr = LearningRateScheduler(step_decay)
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3)
 
     # Training the model
     history = model.fit(train_datagen(train_data, batch_size=args.batch_size),
                         steps_per_epoch=len(train_data)//args.batch_size, epochs=args.epoch,
-                        callbacks=[loss_history, lr])
+                        callbacks=[loss_history, lr, early_stopping])
 
     model.save('./Trained_Models/model.h5')
 
@@ -113,6 +114,11 @@ def PSNR(original, compressed):
 
 
 def test(model):
+    # Creating the directories
+    os.mkdir(test_dir)
+    os.mkdir(clean_test)
+    os.mkdir(noisy_test)
+    os.mkdir(output_test)
 
     index = 1
     psnr = []
@@ -163,7 +169,13 @@ if __name__ == '__main__':
     clean_test = test_dir + 'clean/'
     noisy_test = test_dir + 'noisy/'
     output_test = test_dir + 'output/'
-    res_report_dir = './res'
+    res_report_dir = './report'
+
+    if not os.path.exists(images_dir):
+        os.mkdir(images_dir)
+    else:
+        shutil.rmtree(images_dir)
+        os.mkdir(images_dir)
 
     # Load the data
     train_data, test_data = load_data()
@@ -175,19 +187,6 @@ if __name__ == '__main__':
             print("No model to test!")
         else:
             model = tf.keras.models.load_model('./Trained_Models/model.h5')
-            if not os.path.exists(images_dir):
-                os.mkdir(images_dir)
-                os.mkdir(test_dir)
-                os.mkdir(clean_test)
-                os.mkdir(noisy_test)
-                os.mkdir(output_test)
-            else:
-                shutil.rmtree(images_dir)
-                os.mkdir(images_dir)
-                os.mkdir(test_dir)
-                os.mkdir(clean_test)
-                os.mkdir(noisy_test)
-                os.mkdir(output_test)
             test(model)
     else:
         if not os.path.exists('./Trained_Models'):
