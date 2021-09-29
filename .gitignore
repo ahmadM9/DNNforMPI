@@ -1,3 +1,4 @@
 .idea/
 venv/
 Datasets
+__pycache__/
