@@ -2,12 +2,21 @@ __author__ = "Ahmad Mohammad"
 
 import numpy as np
 from numpy import linalg as LA
-import scipy.io
+from tensorflow import keras
 
 
 def calculate_lip_constant(A):
     # times 2 ??
     return 2 * max(LA.eigvals(np.dot(A.transpose(), A)))
+
+
+def scaled_denoiser(u, scaler):
+    model = keras.models.load_model('./Trained_Models/model.h5')
+    u = u.reshape(40, 40, 1, 1)
+    u = scaler * u
+    out = (1.0 / scaler) * model.predict(u)
+    out = out.reshape(1600,)
+    return out
 
 
 def prox(u, alpha_):
@@ -24,11 +33,11 @@ class Fista:
     Fast iterative shrinking/thresholding algorithm
     """
 
-    def __init__(self, lambda_=.7, iterations=5000):
+    def __init__(self, lambda_=.5, iterations=5000):
         self.lambda_ = lambda_
         self.iterations = iterations
 
-    def fista(self, A, b, lip_constant=None):
+    def fista(self, A, b, scaler, network, lip_constant=None):
 
         (n_samples, n_features) = A.shape
         n_kernels = int(n_features/n_samples)
@@ -45,8 +54,8 @@ class Fista:
         x_next = np.zeros(n_features, dtype=np.float)
         y_current = np.copy(x_next)
         y_next = np.zeros(n_features, dtype=np.float)
-        tau_old = 1
-        tau_new = 0
+        tau_old = 1.0
+        tau_new = 0.0
 
         # A loop for the algorithm
         for i in range(self.iterations):
@@ -56,9 +65,12 @@ class Fista:
             grad = y_current - lipinv * tmp_grad
 
             # Apply projection
-            x_next = prox(grad, lambdaLipinv)
+            if network is True:
+                x_next = scaled_denoiser(grad, scaler)
+            else:
+                x_next = prox(grad, lambdaLipinv)
 
-            tau_new = (1 + np.sqrt(1 + 4 * tau_old**2)) / 2
+            tau_new = (1.0 + np.sqrt(1.0 + 4.0 * tau_old**2)) / 2.0
 
             y_next = x_next + (tau_old - 1) / tau_new * (x_next - x_current)
 
@@ -68,41 +80,3 @@ class Fista:
             y_current = y_next
 
         return x_next
-
-
-def get_voltage_signals(freq_voltages, index):
-    xcoil = freq_voltages.get('f1')
-    ycoil = freq_voltages.get('f2')
-
-    x = xcoil[index, :]
-    y = ycoil[index, :]
-
-    x = np.concatenate((x.real, x.imag))
-    y = np.concatenate((y.real, y.imag))
-
-    coil_ges = np.concatenate((x, y))
-
-    return coil_ges
-
-
-def get_system_matrix(sysmat):
-
-    af = sysmat.get('Af')
-    bf = sysmat.get('Bf')
-
-    af = af.reshape(817, -1)
-    af = np.concatenate((af.real, af.imag), axis=0)
-    bf = bf.reshape(817, -1)
-    bf = np.concatenate((bf.real, bf.imag), axis=0)
-
-    sys_ges = np.concatenate((af, bf), axis=0)
-
-    return sys_ges
-
-
-def get_image(index):
-    imgs = scipy.io.loadmat('./Datasets/Vessel40x40.mat')
-    imgs_all = imgs.get('images_all')
-    img = imgs_all[index]
-
-    return img
