@@ -62,7 +62,6 @@ def step_decay(epoch):
     drop = 0.5
     epochs_drop = 10.0
     lr = initial_lr * math.pow(drop, math.floor((1 + epoch) / epochs_drop))
-    print(lr)
     return lr
 
 
