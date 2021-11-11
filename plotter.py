@@ -15,7 +15,7 @@ class Plotter:
             plt.xlabel('Epochs')
             plt.ylabel('Loss')
             plt.legend()
-            plt.savefig('./loss.png')
+            plt.savefig('./results/loss.png')
 
         if graph == 'nn':
             f, axarr = plt.subplots(1, 2)
