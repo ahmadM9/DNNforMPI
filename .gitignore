@@ -2,5 +2,5 @@
 venv/
 Datasets
 __pycache__/
-.images
-.Trained_Models
+./images
+./Trained_Models
